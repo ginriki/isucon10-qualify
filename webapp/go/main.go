@@ -244,8 +244,18 @@ func main() {
 	e.Debug = true
 	e.Logger.SetLevel(log.DEBUG)
 
+	dir := "/var/log/api-server"
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		os.Mkdir(dir, 0777)
+	}
+	logfile, _ := os.OpenFile(dir+"/application.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	e.Logger.SetOutput(logfile)
+
+	accesslogfile, _ := os.OpenFile(dir+"/access.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	// Middleware
-	e.Use(middleware.Logger())
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Output: accesslogfile,
+	}))
 	e.Use(middleware.Recover())
 
 	// Initialize

@@ -27,6 +27,7 @@ services:
     volumes:
       - ../mysql/db:/go/src/mysql/db
       - ../fixture:/go/src/fixture
+      - ../logs/api-server:/var/log/api-server
     environment:
       MYSQL_DBNAME: isuumo
       MYSQL_USER: isucon
