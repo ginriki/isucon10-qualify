@@ -18,10 +18,12 @@ CREATE TABLE isuumo.estate
     door_width  INTEGER             NOT NULL,
     features    VARCHAR(64)         NOT NULL,
     popularity  INTEGER             NOT NULL,
-    popularity_negative INTEGER AS (-popularity) NOT NULL
+    popularity_negative INTEGER AS (-popularity) NOT NULL,
+    point POINT AS (POINT(latitude, longitude)) STORED NOT NULL
 );
 ALTER TABLE isuumo.estate ADD INDEX index_rent(rent,id);
 ALTER TABLE isuumo.estate ADD INDEX popularity_neg_id(popularity_negative,id);
+ALTER TABLE isuumo.estate ADD SPATIAL INDEX estate_point_idx(point);
 
 CREATE TABLE isuumo.chair
 (
