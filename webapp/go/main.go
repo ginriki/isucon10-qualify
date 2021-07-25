@@ -242,11 +242,17 @@ func init() {
 	json.Unmarshal(jsonText, &estateSearchCondition)
 }
 
+const DEBUG_MODE = false
+
 func main() {
 	// Echo instance
 	e := echo.New()
-	e.Debug = true
-	e.Logger.SetLevel(log.DEBUG)
+	e.Debug = DEBUG_MODE
+	if DEBUG_MODE {
+		e.Logger.SetLevel(log.DEBUG)
+	} else {
+		e.Logger.SetLevel(log.ERROR)
+	}
 
 	dir := "/var/log/api-server"
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
