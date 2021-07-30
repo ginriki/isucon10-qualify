@@ -376,37 +376,58 @@ func postChair(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	tx, err := db.Begin()
+	tx, err := db.Beginx()
 	if err != nil {
 		c.Logger().Errorf("failed to begin tx: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	defer tx.Rollback()
+
+	const BULK_SIZE = 100
+	var chairs []Chair = make([]Chair, 0, BULK_SIZE)
 	for _, row := range records {
 		rm := RecordMapper{Record: row}
-		id := rm.NextInt()
-		name := rm.NextString()
-		description := rm.NextString()
-		thumbnail := rm.NextString()
-		price := rm.NextInt()
-		height := rm.NextInt()
-		width := rm.NextInt()
-		depth := rm.NextInt()
-		color := rm.NextString()
-		features := rm.NextString()
-		kind := rm.NextString()
-		popularity := rm.NextInt()
-		stock := rm.NextInt()
+		chair := Chair{
+			ID:          int64(rm.NextInt()),
+			Name:        rm.NextString(),
+			Description: rm.NextString(),
+			Thumbnail:   rm.NextString(),
+			Price:       int64(rm.NextInt()),
+			Height:      int64(rm.NextInt()),
+			Width:       int64(rm.NextInt()),
+			Depth:       int64(rm.NextInt()),
+			Color:       rm.NextString(),
+			Features:    rm.NextString(),
+			Kind:        rm.NextString(),
+			Popularity:  int64(rm.NextInt()),
+			Stock:       int64(rm.NextInt()),
+		}
+		chairs = append(chairs, chair)
 		if err := rm.Err(); err != nil {
 			c.Logger().Errorf("failed to read record: %v", err)
 			return c.NoContent(http.StatusBadRequest)
 		}
-		_, err := tx.Exec("INSERT INTO chair(id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock)
+
+		if len(chairs) == BULK_SIZE {
+			_, err := tx.NamedExec("INSERT INTO chair(id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock) VALUES(:id,:name,:description,:thumbnail,:price,:height,:width,:depth,:color,:features,:kind,:popularity,:stock)", chairs)
+			if err != nil {
+				c.Logger().Errorf("failed to insert chair: %v", err)
+				return c.NoContent(http.StatusInternalServerError)
+			}
+			chairs = chairs[:0]
+		}
+	}
+
+	// 残りのレコードinsert
+	if len(chairs) > 0 {
+		_, err := tx.NamedExec("INSERT INTO chair(id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock) VALUES(:id,:name,:description,:thumbnail,:price,:height,:width,:depth,:color,:features,:kind,:popularity,:stock)", chairs)
 		if err != nil {
 			c.Logger().Errorf("failed to insert chair: %v", err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
+		chairs = chairs[:0]
 	}
+
 	if err := tx.Commit(); err != nil {
 		c.Logger().Errorf("failed to commit tx: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
@@ -674,36 +695,57 @@ func postEstate(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	tx, err := db.Begin()
+	tx, err := db.Beginx()
 	if err != nil {
 		c.Logger().Errorf("failed to begin tx: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	defer tx.Rollback()
+
+	const BULK_SIZE = 100
+	var estates []Estate = make([]Estate, 0, BULK_SIZE)
 	for _, row := range records {
 		rm := RecordMapper{Record: row}
-		id := rm.NextInt()
-		name := rm.NextString()
-		description := rm.NextString()
-		thumbnail := rm.NextString()
-		address := rm.NextString()
-		latitude := rm.NextFloat()
-		longitude := rm.NextFloat()
-		rent := rm.NextInt()
-		doorHeight := rm.NextInt()
-		doorWidth := rm.NextInt()
-		features := rm.NextString()
-		popularity := rm.NextInt()
+		estate := Estate{
+			ID:          int64(rm.NextInt()),
+			Name:        rm.NextString(),
+			Description: rm.NextString(),
+			Thumbnail:   rm.NextString(),
+			Address:     rm.NextString(),
+			Latitude:    rm.NextFloat(),
+			Longitude:   rm.NextFloat(),
+			Rent:        int64(rm.NextInt()),
+			DoorHeight:  int64(rm.NextInt()),
+			DoorWidth:   int64(rm.NextInt()),
+			Features:    rm.NextString(),
+			Popularity:  int64(rm.NextInt()),
+		}
+		estates = append(estates, estate)
 		if err := rm.Err(); err != nil {
 			c.Logger().Errorf("failed to read record: %v", err)
 			return c.NoContent(http.StatusBadRequest)
 		}
-		_, err := tx.Exec("INSERT INTO estate(id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", id, name, description, thumbnail, address, latitude, longitude, rent, doorHeight, doorWidth, features, popularity)
+
+		if len(estates) == BULK_SIZE {
+			_, err := tx.NamedExec("INSERT INTO estate(id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity) VALUES(:id, :name, :description, :thumbnail, :address, :latitude, :longitude, :rent, :door_height, :door_width, :features, :popularity)", estates)
+			if err != nil {
+				c.Logger().Errorf("failed to insert estate: %v", err)
+				return c.NoContent(http.StatusInternalServerError)
+			}
+			estates = estates[:0]
+		}
+	}
+
+	// 残りのレコードinsert
+	if len(estates) > 0 {
+		_, err := tx.NamedExec("INSERT INTO estate(id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity) VALUES(:id, :name, :description, :thumbnail, :address, :latitude, :longitude, :rent, :door_height, :door_width, :features, :popularity)", estates)
 		if err != nil {
 			c.Logger().Errorf("failed to insert estate: %v", err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
+		estates = estates[:0]
 	}
+
 	if err := tx.Commit(); err != nil {
 		c.Logger().Errorf("failed to commit tx: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
